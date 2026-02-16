@@ -1,0 +1,116 @@
+/* WooCommerce Cashback System - Admin Styles */
+
+:root {
+    --wcs-adm-primary: #2271b1;
+    --wcs-adm-text: #1d2327;
+    --wcs-adm-text-sub: #646970;
+    --wcs-adm-bg: #fff;
+    --wcs-adm-border: #c3c4c7;
+    --wcs-adm-success: #00a32a;
+    --wcs-adm-danger: #d63638;
+}
+
+/* Statistics Grid */
+.wcs-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin: 30px 0;
+}
+
+.wcs-stat-box {
+    background: var(--wcs-adm-bg);
+    border: 1px solid var(--wcs-adm-border);
+    border-radius: 0; /* WordPress style is rectangular */
+    padding: 24px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    border-left: 4px solid var(--wcs-adm-primary);
+    position: relative;
+    box-sizing: border-box;
+}
+
+/* Optional hover boost */
+.wcs-stat-box:hover {
+    border-color: #8c8f94;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Color schemes for stats */
+.wcs-stat-box.balance { border-left-color: #2271b1; }
+.wcs-stat-box.earned { border-left-color: #9b59b6; }
+.wcs-stat-box.spent { border-left-color: var(--wcs-adm-danger); }
+.wcs-stat-box.users { border-left-color: #f39c12; }
+
+.wcs-stat-box h3 {
+    margin: 0 0 15px;
+    font-size: 13px;
+    color: var(--wcs-adm-text-sub);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.wcs-stat-value {
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--wcs-adm-text);
+    margin: 10px 0;
+    line-height: 1.2;
+}
+
+.wcs-stat-desc {
+    font-size: 13px;
+    color: var(--wcs-adm-text-sub);
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #f0f0f1;
+    line-height: 1.5;
+}
+
+.wcs-stat-desc strong {
+    color: var(--wcs-adm-text);
+    font-weight: 600;
+}
+
+/* Info Box Standardized */
+.wcs-info-box {
+    background: #fff;
+    border-left: 4px solid var(--wcs-adm-primary);
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+}
+.wcs-info-box h3 { margin-top: 0; font-size: 14px; color: var(--wcs-adm-text); }
+.wcs-info-box ul { margin: 10px 0 0 20px; list-style-type: disc; }
+
+/* User Management Table Improvements */
+.wcs-user-limit-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.wcs-user-max-limit { 
+    width: 100px !important; 
+}
+
+/* Badges for status in tables */
+.wcs-balance-positive { color: var(--wcs-adm-success); font-weight: 600; }
+.wcs-balance-earned { color: var(--wcs-adm-primary); }
+.wcs-balance-spent { color: var(--wcs-adm-danger); }
+
+/* Buttons */
+.button.wcs-reset-balance {
+    color: var(--wcs-adm-danger);
+    border-color: var(--wcs-adm-danger);
+    background: transparent;
+}
+.button.wcs-reset-balance:hover {
+    background: var(--wcs-adm-danger);
+    color: #fff;
+    border-color: var(--wcs-adm-danger);
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+    .wcs-stats-grid { grid-template-columns: 1fr; }
+}

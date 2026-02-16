@@ -1,0 +1,761 @@
+/* ═══════════════════════════════════════════════════════════════
+ *  WooCommerce Cashback System — Scoped Public Styles
+ *  All rules are scoped to .wcs-* classes only.
+ *  No :root overrides, no bare tag selectors.
+ * ═══════════════════════════════════════════════════════════════ */
+
+/* ── Scoped CSS Variables ─────────────────────────────────────
+ *  Defined on every top-level WCS container instead of :root
+ *  so they never leak into the site theme.
+ * ──────────────────────────────────────────────────────────── */
+.wcs-cashback-block,
+.wcs-premium-card,
+.wcs-dashboard-widget,
+.wcs-transaction-history,
+.wcs-balance-summary,
+.wcs-cashback-dashboard,
+.wcs-empty-cashback,
+.wcs-order-cashback-info,
+.wcs-terms-panel,
+.wcs-cta-block,
+.wcs-cashback-message {
+    --wcs-text: #333333;
+    --wcs-text-light: #666666;
+    --wcs-border: #e2e2e2;
+    --wcs-bg: #fff;
+    --wcs-bg-light: #f9fafb;
+    --wcs-primary: #111111;
+    --wcs-success: #10b981;
+    --wcs-danger: #ef4444;
+    --wcs-radius: 6px;
+
+    box-sizing: border-box;
+    font-family: inherit;
+    color: var(--wcs-text);
+}
+
+/* Ensure all children inherit border-box */
+.wcs-cashback-block *,
+.wcs-premium-card *,
+.wcs-dashboard-widget *,
+.wcs-transaction-history *,
+.wcs-balance-summary *,
+.wcs-cashback-dashboard *,
+.wcs-empty-cashback *,
+.wcs-order-cashback-info *,
+.wcs-terms-panel *,
+.wcs-cta-block * {
+    box-sizing: border-box;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+ *  CASHBACK BLOCK — Cart & Checkout
+ * ═══════════════════════════════════════════════════════════════ */
+.wcs-cashback-block {
+    background: var(--wcs-bg);
+    border: 1px solid var(--wcs-border);
+    border-radius: var(--wcs-radius);
+    padding: 20px 24px;
+    margin: 20px 0;
+}
+
+.wcs-cashback-block .wcs-cb-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--wcs-border);
+}
+
+.wcs-cashback-block .wcs-cb-icon {
+    font-size: 20px;
+    line-height: 1;
+}
+
+.wcs-cashback-block .wcs-cb-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--wcs-primary);
+}
+
+.wcs-cashback-block .wcs-cb-login-msg {
+    font-size: 14px;
+    color: var(--wcs-text-light);
+    margin: 0;
+}
+
+.wcs-cashback-block .wcs-cb-login-msg a {
+    color: var(--wcs-primary);
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+.wcs-cashback-block .wcs-cb-balance-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 15px;
+}
+
+.wcs-cashback-block .wcs-cb-label {
+    color: var(--wcs-text-light);
+    font-weight: 500;
+}
+
+.wcs-cashback-block .wcs-cb-value {
+    font-weight: 700;
+    color: var(--wcs-primary);
+    font-size: 16px;
+}
+
+.wcs-cashback-block .wcs-cb-has-balance {
+    color: var(--wcs-success) !important;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.wcs-cashback-block .wcs-cb-has-balance:hover {
+    opacity: 0.8;
+}
+
+.wcs-cashback-block .wcs-cb-empty {
+    font-size: 13px;
+    color: var(--wcs-text-light);
+    margin: 0;
+    font-style: italic;
+}
+
+/* ── Form (input + button) ── */
+.wcs-cashback-block .wcs-cb-form {
+    margin-top: 8px;
+}
+
+.wcs-cashback-block .wcs-cb-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.wcs-cashback-block .wcs-cb-input-row label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--wcs-text);
+    white-space: nowrap;
+}
+
+.wcs-cashback-block input.wcs-cb-input {
+    width: 120px !important;
+    max-width: 120px !important;
+    height: 40px !important;
+    padding: 6px 12px !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: var(--wcs-radius) !important;
+    font-size: 14px !important;
+    color: var(--wcs-text) !important;
+    background: #fff !important;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.wcs-cashback-block input.wcs-cb-input::-webkit-outer-spin-button,
+.wcs-cashback-block input.wcs-cb-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+}
+
+.wcs-cashback-block .wcs-cb-apply-btn {
+    height: 40px !important;
+    padding: 0 20px !important;
+    background: var(--wcs-primary) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: var(--wcs-radius) !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    line-height: 40px !important;
+}
+
+.wcs-cashback-block .wcs-cb-apply-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.wcs-cashback-block .wcs-cb-apply-btn:disabled {
+    opacity: 0.5;
+    cursor: wait;
+}
+
+.wcs-cashback-block .wcs-cb-max-info {
+    display: block;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--wcs-text-light);
+}
+
+/* ── Applied state ── */
+.wcs-cashback-block .wcs-cb-applied {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-radius: var(--wcs-radius);
+    padding: 12px 16px;
+    margin-bottom: 10px;
+}
+
+.wcs-cashback-block .wcs-cb-applied-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #065f46;
+}
+
+.wcs-cashback-block .wcs-cb-applied-amount {
+    font-weight: 700;
+    color: var(--wcs-success);
+    font-size: 16px;
+}
+
+.wcs-cashback-block .wcs-cb-remove-btn {
+    background: transparent !important;
+    border: 1px solid #d1d5db !important;
+    color: var(--wcs-danger) !important;
+    padding: 6px 16px !important;
+    border-radius: var(--wcs-radius) !important;
+    font-size: 13px !important;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.wcs-cashback-block .wcs-cb-remove-btn:hover {
+    background: #fef2f2 !important;
+    border-color: var(--wcs-danger) !important;
+}
+
+.wcs-cashback-block .wcs-cb-remove-btn:disabled {
+    opacity: 0.5;
+    cursor: wait;
+}
+
+/* ── No-earning notice ── */
+.wcs-cashback-block .wcs-cb-no-earn-notice {
+    font-size: 13px;
+    color: #92400e;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: var(--wcs-radius);
+    padding: 8px 12px;
+    margin: 0;
+}
+
+/* ── Messages ── */
+.wcs-cashback-block .wcs-cb-message {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: var(--wcs-radius);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.wcs-cashback-block .wcs-msg-success {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.wcs-cashback-block .wcs-msg-error {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* ── Potential earning row in totals table ── */
+.wcs-potential-earning-row th,
+.wcs-potential-earning-row td {
+    font-size: 14px;
+    padding-top: 8px !important;
+}
+
+.wcs-potential-earning-row .wcs-earn-amount {
+    color: var(--wcs-success, #10b981);
+    font-weight: 700;
+}
+
+.wcs-potential-earning-row .wcs-no-earning {
+    color: var(--wcs-text-light, #666666);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+ *  DASHBOARD WIDGET (My Account)
+ * ═══════════════════════════════════════════════════════════════ */
+.wcs-dashboard-widget {
+    background: var(--wcs-bg);
+    border: 1px solid var(--wcs-border);
+    border-radius: var(--wcs-radius);
+    padding: 24px;
+    margin: 20px 0;
+    text-align: center;
+}
+
+.wcs-dashboard-widget .wcs-widget-balance {
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--wcs-primary);
+    margin: 10px 0 20px 0;
+}
+
+/* ── Balance Summary Grid (Dashboard Page) ── */
+.wcs-balance-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin: 20px 0 40px 0;
+}
+
+/* Override grid for checkout context */
+.wcs-premium-card .wcs-balance-summary {
+    display: block;
+    margin: 15px 0;
+}
+
+.wcs-balance-summary .wcs-balance-card {
+    background: var(--wcs-bg, #fff);
+    border: 1px solid var(--wcs-border, #e2e2e2);
+    border-radius: var(--wcs-radius, 6px);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+}
+
+.wcs-balance-summary .wcs-balance-label {
+    font-size: 13px;
+    color: var(--wcs-text-light, #666);
+    margin-bottom: 8px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.wcs-balance-summary .wcs-balance-amount {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--wcs-primary, #111);
+    margin-bottom: 8px;
+}
+
+.wcs-balance-summary .wcs-balance-info {
+    font-size: 13px;
+    color: var(--wcs-text-light, #666);
+    margin-top: auto;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+ *  PREMIUM CARD (Cart & Checkout — legacy)
+ * ═══════════════════════════════════════════════════════════════ */
+.wcs-premium-card {
+    background: var(--wcs-bg);
+    border: 1px solid var(--wcs-border);
+    border-radius: var(--wcs-radius);
+    padding: 24px;
+    margin: 20px 0;
+}
+
+a.wcs-premium-button {
+    text-decoration: none !important;
+    display: inline-block;
+}
+
+.wcs-premium-card .wcs-premium-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 20px 0 !important;
+    color: var(--wcs-primary) !important;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--wcs-border);
+}
+
+.wcs-premium-card .wcs-glass-panel {
+    background: var(--wcs-bg-light);
+    border-radius: var(--wcs-radius);
+    padding: 16px;
+    margin: 16px 0;
+}
+
+.wcs-premium-card .wcs-premium-amount {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--wcs-success);
+    margin: 4px 0;
+}
+
+/* Progress Bar */
+.wcs-premium-card .wcs-progress-container {
+    width: 100%;
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 3px;
+    margin: 15px 0;
+    overflow: hidden;
+}
+
+.wcs-premium-card .wcs-progress-bar {
+    height: 100%;
+    background: var(--wcs-primary);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+/* Inputs & Buttons */
+.wcs-premium-card input.wcs-premium-input {
+    background: #fff !important;
+    border: 1px solid #d1d5db !important;
+    color: var(--wcs-text) !important;
+    border-radius: var(--wcs-radius) !important;
+    padding: 10px 14px !important;
+    width: 100%;
+    max-width: 140px;
+    height: 44px;
+    font-size: 14px !important;
+}
+
+.wcs-premium-card button.wcs-premium-button,
+.wcs-premium-card .wcs-premium-button {
+    background: var(--wcs-primary) !important;
+    color: #fff !important;
+    border: 1px solid var(--wcs-primary) !important;
+    padding: 0 24px !important;
+    height: 44px !important;
+    line-height: 42px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    border-radius: var(--wcs-radius) !important;
+    cursor: pointer;
+    text-transform: none;
+    transition: all 0.2s;
+    box-shadow: none !important;
+}
+
+.wcs-premium-card button.wcs-premium-button:hover,
+.wcs-premium-card .wcs-premium-button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.wcs-premium-card button.wcs-premium-button.secondary,
+.wcs-premium-card .wcs-premium-button.secondary {
+    background: #fff !important;
+    color: var(--wcs-text) !important;
+    border: 1px solid #d1d5db !important;
+}
+
+/* Checkout Field Specifics */
+.wcs-premium-card .wcs-balance-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.wcs-premium-card .wcs-balance-item .wcs-balance-amount {
+    font-size: 16px;
+    margin: 0;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+ *  DASHBOARD PAGE (My Account → Cashback)
+ * ═══════════════════════════════════════════════════════════════ */
+.wcs-cashback-dashboard .wcs-empty-cashback,
+.wcs-empty-cashback {
+    background: var(--wcs-bg, #fff);
+    border: 1px solid var(--wcs-border, #e2e2e2);
+    border-radius: var(--wcs-radius, 6px);
+    padding: 60px 40px;
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.wcs-cashback-dashboard .wcs-steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+    margin: 30px 0;
+}
+
+.wcs-cashback-dashboard .wcs-step-card {
+    background: var(--wcs-bg, #fff);
+    border: 1px solid var(--wcs-border, #e2e2e2);
+    padding: 24px;
+    border-radius: var(--wcs-radius, 6px);
+    text-align: left;
+}
+
+.wcs-cashback-dashboard .wcs-step-card .wcs-step-title {
+    margin: 10px 0;
+    font-size: 16px;
+    color: var(--wcs-primary, #111);
+}
+
+.wcs-cashback-dashboard .wcs-step-card .wcs-step-desc {
+    font-size: 14px;
+    color: var(--wcs-text-light, #666);
+    line-height: 1.5;
+}
+
+.wcs-terms-panel {
+    border: 1px solid var(--wcs-border, #e2e2e2);
+    border-radius: var(--wcs-radius, 6px);
+    padding: 30px;
+    margin: 40px 0;
+    background: var(--wcs-bg, #fff);
+}
+
+.wcs-terms-panel .wcs-terms-list li {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--wcs-border, #e2e2e2);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.wcs-terms-panel .wcs-terms-list li:last-child {
+    border: none;
+}
+
+.wcs-terms-panel .wcs-term-badge {
+    background: var(--wcs-bg-light, #f9fafb);
+    border: 1px solid #d1d5db;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--wcs-text, #333);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+ *  TRANSACTIONS TABLE
+ * ═══════════════════════════════════════════════════════════════ */
+.wcs-transaction-history {
+    border: 1px solid #cbd5e1;
+    border-radius: var(--wcs-radius, 6px);
+    background: #fff;
+    margin-top: 40px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.wcs-transaction-history .wcs-th-title {
+    margin: 0;
+    padding: 20px 24px;
+    border-bottom: 1px solid #cbd5e1;
+    font-size: 16px;
+    background: #f8fafc;
+    font-weight: 600;
+}
+
+.wcs-transaction-history .wcs-table-responsive {
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.wcs-transaction-history .wcs-table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.wcs-transaction-history .wcs-table-responsive::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.wcs-transaction-history .wcs-table-responsive::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 4px;
+}
+
+.wcs-transactions-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+}
+
+.wcs-transactions-table th,
+.wcs-transactions-table td {
+    padding: 16px 20px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    border-right: 1px solid #e2e8f0;
+    font-size: 14px;
+}
+
+.wcs-transactions-table th:last-child,
+.wcs-transactions-table td:last-child {
+    border-right: none;
+}
+
+.wcs-transactions-table th {
+    font-weight: 600;
+    color: #475569;
+    font-size: 12px;
+    text-transform: uppercase;
+    background: #f1f5f9;
+    white-space: nowrap;
+}
+
+/* Zebra Striping */
+.wcs-transactions-table tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+.wcs-transactions-table tr:hover {
+    background-color: #f1f5f9;
+}
+
+.wcs-transactions-table tr:last-child td {
+    border-bottom: none;
+}
+
+.wcs-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.wcs-badge.wcs-badge-earned {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.wcs-badge.wcs-badge-spent {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.wcs-badge.wcs-badge-adjustment {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.wcs-amount-earned {
+    color: var(--wcs-success, #10b981);
+    font-weight: 600;
+}
+
+.wcs-amount-spent {
+    color: var(--wcs-danger, #ef4444);
+    font-weight: 600;
+}
+
+.wcs-cta-block {
+    background: var(--wcs-bg-light, #f9fafb);
+    padding: 40px;
+    text-align: center;
+    border-radius: var(--wcs-radius, 6px);
+    margin-top: 40px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+ *  MESSAGES (legacy)
+ * ═══════════════════════════════════════════════════════════════ */
+.wcs-cashback-message {
+    padding: 12px;
+    border-radius: var(--wcs-radius, 6px);
+    font-size: 13px;
+    margin-top: 15px;
+}
+
+.wcs-cashback-message.wcs-msg-success {
+    background-color: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.wcs-cashback-message.wcs-msg-error {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+ *  ORDER DETAILS — Cashback Info
+ * ═══════════════════════════════════════════════════════════════ */
+.wcs-order-cashback-info {
+    margin-top: 20px;
+    padding: 20px;
+    background: var(--wcs-bg-light, #f9fafb);
+    border-radius: var(--wcs-radius, 6px);
+    border: 1px solid var(--wcs-border, #e2e2e2);
+}
+
+.wcs-order-cashback-info .wcs-order-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 10px 0;
+    font-weight: 500;
+}
+
+.wcs-order-cashback-info .wcs-cashback-earned span {
+    color: var(--wcs-success, #10b981);
+    font-weight: 700;
+}
+
+.wcs-order-cashback-info .wcs-cashback-used span {
+    color: var(--wcs-danger, #ef4444);
+    font-weight: 700;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+ *  RESPONSIVE
+ * ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+    .wcs-balance-summary,
+    .wcs-cashback-dashboard .wcs-steps-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .wcs-transactions-table th,
+    .wcs-transactions-table td {
+        padding: 12px 16px;
+    }
+
+    .wcs-cashback-block {
+        padding: 16px;
+    }
+
+    .wcs-cashback-block .wcs-cb-input-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .wcs-cashback-block input.wcs-cb-input {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .wcs-cashback-block .wcs-cb-applied {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+}
