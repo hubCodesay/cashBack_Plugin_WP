@@ -62,6 +62,16 @@ class WCS_Cashback_Admin {
             array($this, 'users_page')
         );
         
+        // VIP Discounts submenu
+        add_submenu_page(
+            'wcs-cashback',
+            'VIP Знижки',
+            '⭐ VIP Знижки',
+            'manage_woocommerce',
+            'wcs-cashback-vip',
+            array($this, 'vip_discounts_page')
+        );
+        
         // Statistics submenu
         add_submenu_page(
             'wcs-cashback',
@@ -786,5 +796,390 @@ class WCS_Cashback_Admin {
         ));
         
         wp_send_json_success(array('message' => '✅ Баланс успішно скинуто'));
+    }
+
+    /* ═══════════════════════════════════════════════════════
+     *  VIP Discounts Admin Page
+     * ═══════════════════════════════════════════════════════ */
+    public function vip_discounts_page() {
+        if (!current_user_can('manage_woocommerce')) {
+            return;
+        }
+
+        $rules = WCS_VIP_Discounts::get_rules();
+
+        // Get all product categories for the dropdown
+        $product_categories = get_terms(array(
+            'taxonomy'   => 'product_cat',
+            'hide_empty' => false,
+            'orderby'    => 'name',
+        ));
+        ?>
+        <div class="wrap">
+            <h1>⭐ VIP Знижки для Клієнтів</h1>
+            <p class="description">Налаштуйте персональні знижки для VIP-клієнтів на певні категорії товарів.<br>
+                Коли VIP-клієнт купує товар із зазначеної категорії — він отримує знижку замість кешбеку на ці товари.</p>
+
+            <div class="wcs-info-box" style="border-left-color: #ff9800; margin-top: 15px;">
+                <h3>💡 Як це працює:</h3>
+                <ul style="margin-bottom: 0;">
+                    <li><strong>Додайте правило</strong> — виберіть клієнтів, категорії товарів та тип знижки</li>
+                    <li><strong>Знижка в %</strong> — зменшує ціну кожного товару з категорії на вказаний відсоток</li>
+                    <li><strong>Знижка в грн</strong> — зменшує ціну кожного товару на фіксовану суму</li>
+                    <li><strong>Кешбек</strong> — на товари зі знижкою кешбек <u>не нараховується</u></li>
+                </ul>
+            </div>
+
+            <!-- ═══ ADD / EDIT RULE FORM ═══ -->
+            <div class="card" style="max-width: 800px; margin-top: 25px; padding: 24px;">
+                <h2 id="wcs-vip-form-title" style="margin-top: 0;">➕ Додати Нове Правило</h2>
+                <input type="hidden" id="wcs-vip-rule-index" value="">
+
+                <table class="form-table" style="margin-top: 0;">
+                    <tr>
+                        <th><label>👤 Клієнти</label></th>
+                        <td>
+                            <select id="wcs-vip-users" multiple="multiple" style="width: 100%; min-width: 350px;"></select>
+                            <p class="description">Почніть вводити ім'я або email клієнта для пошуку</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label>📂 Категорії Товарів</label></th>
+                        <td>
+                            <select id="wcs-vip-categories" multiple="multiple" style="width: 100%; min-width: 350px;">
+                                <?php foreach ($product_categories as $cat) : ?>
+                                    <option value="<?php echo esc_attr($cat->term_id); ?>">
+                                        <?php echo esc_html($cat->name); ?> (<?php echo $cat->count; ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="description">Виберіть категорії товарів, на які діє знижка</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label>💰 Тип Знижки</label></th>
+                        <td>
+                            <select id="wcs-vip-discount-type" style="min-width: 200px;">
+                                <option value="percentage">📊 Відсоток (%)</option>
+                                <option value="fixed">💵 Фіксована сума (грн)</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label>🔢 Розмір Знижки</label></th>
+                        <td>
+                            <input type="number" id="wcs-vip-discount-value" step="0.01" min="0" value="" 
+                                   class="regular-text" style="width: 150px;" placeholder="Наприклад: 10">
+                            <span id="wcs-vip-discount-suffix" style="font-weight: 600; margin-left: 5px;">%</span>
+                            <p class="description" id="wcs-vip-discount-hint">
+                                Для відсотків: 10 = 10% знижки. Для фіксованої: 50 = 50 грн знижки з кожного товару.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label>🏷️ Назва (Мітка)</label></th>
+                        <td>
+                            <input type="text" id="wcs-vip-label" class="regular-text" style="width: 300px;" 
+                                   placeholder="Наприклад: VIP знижка -10%" 
+                                   value="">
+                            <p class="description">Ця назва буде видна клієнту в кошику як назва знижки</p>
+                        </td>
+                    </tr>
+                </table>
+
+                <div style="padding-top: 10px; border-top: 1px solid #eee; margin-top: 10px;">
+                    <button type="button" id="wcs-vip-save-btn" class="button button-primary" style="font-size: 14px; padding: 6px 24px;">
+                        💾 Зберегти Правило
+                    </button>
+                    <button type="button" id="wcs-vip-cancel-btn" class="button" style="font-size: 14px; padding: 6px 24px; display: none;">
+                        ✖ Скасувати
+                    </button>
+                    <span id="wcs-vip-save-status" style="margin-left: 15px; font-weight: 500;"></span>
+                </div>
+            </div>
+
+            <!-- ═══ EXISTING RULES TABLE ═══ -->
+            <h2 style="margin-top: 35px;">📋 Активні Правила VIP Знижок</h2>
+
+            <table class="wp-list-table widefat fixed striped" id="wcs-vip-rules-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">№</th>
+                        <th>👤 Клієнти</th>
+                        <th>📂 Категорії</th>
+                        <th style="width: 130px;">💰 Знижка</th>
+                        <th style="width: 160px;">🏷️ Мітка</th>
+                        <th style="width: 80px;">Статус</th>
+                        <th style="width: 170px;">⚙️ Дії</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($rules)) : ?>
+                        <?php foreach ($rules as $i => $rule) : ?>
+                            <tr data-index="<?php echo $i; ?>">
+                                <td><strong><?php echo ($i + 1); ?></strong></td>
+                                <td>
+                                    <?php
+                                    $user_names = array();
+                                    foreach ((array) $rule['user_ids'] as $uid) {
+                                        $u = get_userdata($uid);
+                                        if ($u) {
+                                            $user_names[] = '<strong>' . esc_html($u->display_name) . '</strong><br><small style="color:#666;">' . esc_html($u->user_email) . '</small>';
+                                        }
+                                    }
+                                    echo implode('<hr style="margin:4px 0;border-color:#eee;">', $user_names);
+                                    ?>
+                                </td>
+                                <td>
+                                    <?php
+                                    $cat_names = array();
+                                    foreach ((array) $rule['category_ids'] as $cid) {
+                                        $term = get_term($cid, 'product_cat');
+                                        if ($term && !is_wp_error($term)) {
+                                            $cat_names[] = esc_html($term->name);
+                                        }
+                                    }
+                                    echo implode(', ', $cat_names);
+                                    ?>
+                                </td>
+                                <td>
+                                    <strong style="font-size: 15px; color: #d63638;">
+                                        <?php
+                                        if ($rule['discount_type'] === 'percentage') {
+                                            echo '-' . $rule['discount_value'] . '%';
+                                        } else {
+                                            echo '-' . wc_price($rule['discount_value']);
+                                        }
+                                        ?>
+                                    </strong><br>
+                                    <small style="color:#888;">
+                                        <?php echo $rule['discount_type'] === 'percentage' ? 'відсоток' : 'фіксована'; ?>
+                                    </small>
+                                </td>
+                                <td><?php echo esc_html($rule['label']); ?></td>
+                                <td>
+                                    <?php if (!empty($rule['enabled'])) : ?>
+                                        <span style="color: #00a32a; font-weight: 600;">✅ Активно</span>
+                                    <?php else : ?>
+                                        <span style="color: #999;">⏸ Вимкнено</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <button class="button wcs-vip-edit-btn" data-index="<?php echo $i; ?>"
+                                            data-users='<?php echo esc_attr(json_encode(array_map(function($uid) {
+                                                $u = get_userdata($uid);
+                                                return $u ? array('id' => $uid, 'text' => $u->display_name . ' (' . $u->user_email . ')') : null;
+                                            }, (array)$rule['user_ids']))); ?>'
+                                            data-categories='<?php echo esc_attr(json_encode((array)$rule['category_ids'])); ?>'
+                                            data-discount-type="<?php echo esc_attr($rule['discount_type']); ?>"
+                                            data-discount-value="<?php echo esc_attr($rule['discount_value']); ?>"
+                                            data-label="<?php echo esc_attr($rule['label']); ?>"
+                                            data-enabled="<?php echo !empty($rule['enabled']) ? '1' : '0'; ?>">
+                                        ✏️ Редагувати
+                                    </button>
+                                    <button class="button wcs-vip-delete-btn" data-index="<?php echo $i; ?>" style="color: #d63638;">
+                                        🗑️ Видалити
+                                    </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else : ?>
+                        <tr id="wcs-vip-no-rules">
+                            <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                                <div style="font-size: 48px;">📭</div>
+                                <p style="font-size: 16px; margin: 10px 0 0 0;">
+                                    Поки що немає правил VIP знижок.<br>
+                                    <small>Додайте перше правило вище, щоб призначити персональну знижку клієнту.</small>
+                                </p>
+                            </td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+
+            <div class="wcs-info-box" style="border-left-color: #4caf50; margin-top: 25px;">
+                <h3>📌 Важливо знати:</h3>
+                <ul style="margin-bottom: 0;">
+                    <li><strong>Один клієнт — кілька правил:</strong> Якщо клієнт є в кількох правилах, знижки додаються</li>
+                    <li><strong>Кешбек:</strong> На товари, які отримали VIP-знижку, кешбек не нараховується</li>
+                    <li><strong>Видимість:</strong> Клієнт бачить знижку в кошику як "VIP Знижка" (або вашу мітку)</li>
+                    <li><strong>Пріоритет:</strong> VIP-знижка застосовується разом з кешбеком — кешбек на інші товари, знижка на VIP-товари</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ═══ INLINE SCRIPT FOR VIP ADMIN (Select2 + AJAX) ═══ -->
+        <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            // Initialize Select2 for user search
+            $('#wcs-vip-users').select2({
+                ajax: {
+                    url: wcs_admin.ajax_url,
+                    dataType: 'json',
+                    delay: 300,
+                    data: function(params) {
+                        return {
+                            action: 'wcs_search_users',
+                            nonce: wcs_admin.nonce,
+                            term: params.term
+                        };
+                    },
+                    processResults: function(data) {
+                        return { results: data };
+                    },
+                    cache: true
+                },
+                minimumInputLength: 2,
+                placeholder: 'Шукати клієнта за іменем або email...',
+                language: {
+                    inputTooShort: function() { return 'Введіть хоча б 2 символи...'; },
+                    noResults:     function() { return 'Клієнтів не знайдено'; },
+                    searching:     function() { return 'Пошук...'; }
+                }
+            });
+
+            // Initialize Select2 for categories
+            $('#wcs-vip-categories').select2({
+                placeholder: 'Виберіть категорії...',
+                language: {
+                    noResults: function() { return 'Категорій не знайдено'; }
+                }
+            });
+
+            // Toggle suffix for discount type
+            $('#wcs-vip-discount-type').on('change', function() {
+                var suffix = $(this).val() === 'percentage' ? '%' : 'грн';
+                $('#wcs-vip-discount-suffix').text(suffix);
+            });
+
+            // ── Save Rule ──
+            $('#wcs-vip-save-btn').on('click', function() {
+                var $btn = $(this);
+                var $status = $('#wcs-vip-save-status');
+                var userIds = $('#wcs-vip-users').val();
+                var catIds  = $('#wcs-vip-categories').val();
+
+                if (!userIds || userIds.length === 0) {
+                    $status.html('<span style="color:#d63638;">❌ Виберіть клієнтів</span>');
+                    return;
+                }
+                if (!catIds || catIds.length === 0) {
+                    $status.html('<span style="color:#d63638;">❌ Виберіть категорії</span>');
+                    return;
+                }
+
+                var discountVal = parseFloat($('#wcs-vip-discount-value').val());
+                if (!discountVal || discountVal <= 0) {
+                    $status.html('<span style="color:#d63638;">❌ Вкажіть розмір знижки</span>');
+                    return;
+                }
+
+                $btn.prop('disabled', true);
+                $status.html('<span style="color:#2271b1;">⏳ Збереження...</span>');
+
+                $.post(wcs_admin.ajax_url, {
+                    action: 'wcs_save_vip_rule',
+                    nonce: wcs_admin.nonce,
+                    user_ids: userIds,
+                    category_ids: catIds,
+                    discount_type: $('#wcs-vip-discount-type').val(),
+                    discount_value: discountVal,
+                    label: $('#wcs-vip-label').val(),
+                    enabled: 1,
+                    rule_index: $('#wcs-vip-rule-index').val()
+                }, function(response) {
+                    if (response.success) {
+                        $status.html('<span style="color:#00a32a;">' + response.data.message + '</span>');
+                        setTimeout(function() { location.reload(); }, 800);
+                    } else {
+                        $status.html('<span style="color:#d63638;">' + response.data.message + '</span>');
+                        $btn.prop('disabled', false);
+                    }
+                }).fail(function() {
+                    $status.html('<span style="color:#d63638;">❌ Помилка сервера</span>');
+                    $btn.prop('disabled', false);
+                });
+            });
+
+            // ── Edit Rule ──
+            $(document).on('click', '.wcs-vip-edit-btn', function() {
+                var $btn = $(this);
+                var index = $btn.data('index');
+
+                // Set form title
+                $('#wcs-vip-form-title').text('✏️ Редагувати Правило #' + (index + 1));
+                $('#wcs-vip-rule-index').val(index);
+                $('#wcs-vip-cancel-btn').show();
+
+                // Fill users
+                var users = $btn.data('users');
+                var $userSelect = $('#wcs-vip-users');
+                $userSelect.empty();
+                if (users && Array.isArray(users)) {
+                    users.forEach(function(u) {
+                        if (u) {
+                            $userSelect.append(new Option(u.text, u.id, true, true));
+                        }
+                    });
+                }
+                $userSelect.trigger('change');
+
+                // Fill categories
+                var cats = $btn.data('categories');
+                $('#wcs-vip-categories').val(cats).trigger('change');
+
+                // Fill discount
+                $('#wcs-vip-discount-type').val($btn.data('discount-type')).trigger('change');
+                $('#wcs-vip-discount-value').val($btn.data('discount-value'));
+                $('#wcs-vip-label').val($btn.data('label'));
+
+                // Scroll to form
+                $('html, body').animate({ scrollTop: $('#wcs-vip-form-title').offset().top - 50 }, 300);
+            });
+
+            // ── Cancel Edit ──
+            $('#wcs-vip-cancel-btn').on('click', function() {
+                $('#wcs-vip-form-title').text('➕ Додати Нове Правило');
+                $('#wcs-vip-rule-index').val('');
+                $('#wcs-vip-cancel-btn').hide();
+                $('#wcs-vip-users').val(null).trigger('change');
+                $('#wcs-vip-categories').val(null).trigger('change');
+                $('#wcs-vip-discount-value').val('');
+                $('#wcs-vip-label').val('');
+                $('#wcs-vip-save-status').html('');
+            });
+
+            // ── Delete Rule ──
+            $(document).on('click', '.wcs-vip-delete-btn', function() {
+                if (!confirm('Ви впевнені, що хочете видалити це правило?')) {
+                    return;
+                }
+
+                var $btn = $(this);
+                var index = $btn.data('index');
+                $btn.prop('disabled', true).text('⏳...');
+
+                $.post(wcs_admin.ajax_url, {
+                    action: 'wcs_delete_vip_rule',
+                    nonce: wcs_admin.nonce,
+                    rule_index: index
+                }, function(response) {
+                    if (response.success) {
+                        $btn.closest('tr').fadeOut(300, function() {
+                            $(this).remove();
+                            // Check if table is empty
+                            if ($('#wcs-vip-rules-table tbody tr').length === 0) {
+                                location.reload();
+                            }
+                        });
+                    } else {
+                        alert(response.data.message);
+                        $btn.prop('disabled', false).text('🗑️ Видалити');
+                    }
+                });
+            });
+        });
+        </script>
+        <?php
     }
 }

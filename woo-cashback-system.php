@@ -117,12 +117,14 @@ function wcs_init_plugin() {
     require_once WCS_PLUGIN_DIR . 'includes/class-cashback-user.php';
     require_once WCS_PLUGIN_DIR . 'includes/class-cashback-checkout.php';
     require_once WCS_PLUGIN_DIR . 'includes/class-cashback-notifications.php';
+    require_once WCS_PLUGIN_DIR . 'includes/class-vip-discounts.php';
     
     // Initialize classes - User раніше для реєстрації endpoint
     WCS_Cashback_User::get_instance();
     WCS_Cashback_Admin::get_instance();
     WCS_Cashback_Checkout::get_instance();
     WCS_Cashback_Notifications::get_instance();
+    WCS_VIP_Discounts::get_instance();
     
     // Self-healing: Ensure tables exist (in case activation hook didn't fire during development)
     WCS_Cashback_Database::create_tables();
@@ -147,6 +149,12 @@ function wcs_admin_scripts($hook) {
     
     wp_enqueue_style('wcs-admin-style', WCS_PLUGIN_URL . 'admin/css/admin-style.css', array(), WCS_VERSION);
     wp_enqueue_script('wcs-admin-script', WCS_PLUGIN_URL . 'admin/js/admin-script.js', array('jquery'), WCS_VERSION, true);
+    
+    // Enqueue Select2 for VIP discounts page (bundled with WooCommerce)
+    if (strpos($hook, 'wcs-cashback-vip') !== false) {
+        wp_enqueue_style('select2', WC()->plugin_url() . '/assets/css/select2.css');
+        wp_enqueue_script('select2', WC()->plugin_url() . '/assets/js/select2/select2.full.min.js', array('jquery'), null, true);
+    }
     
     wp_localize_script('wcs-admin-script', 'wcs_admin', array(
         'ajax_url' => admin_url('admin-ajax.php'),
