@@ -281,9 +281,17 @@ class WCS_Cashback_Checkout {
 							<?php _e('Скасувати', 'woo-cashback-system'); ?>
 						</button>
 					</div>
-					<p class="wcs-cb-no-earn-notice">
-						⚠️ <?php _e('Кешбек не буде нараховано з цього замовлення', 'woo-cashback-system'); ?>
-					</p>
+					<?php 
+					$subtotal = floatval(WC()->cart->get_subtotal());
+					$remaining = max(0, $subtotal - $applied);
+					$potential_on_remaining = WCS_Cashback_Calculator::calculate($remaining, null, $applied);
+					
+					if ($potential_on_remaining > 0) :
+					?>
+						<p class="wcs-cb-earn-on-remaining">
+							✨ <?php printf(__('Ви отримаєте ще %s кешбеку на залишкову суму до оплати', 'woo-cashback-system'), '<strong>'.wc_price($potential_on_remaining).'</strong>'); ?>
+						</p>
+					<?php endif; ?>
 				<?php else : ?>
 					<!-- Cashback input form -->
 					<div class="wcs-cb-form" id="wcs-cb-form-<?php echo esc_attr($context); ?>">
