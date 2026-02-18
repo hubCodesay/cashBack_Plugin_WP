@@ -122,6 +122,3 @@ class WCS_Cashback_User {
         echo '</div>';
     }
 }
-
-// Initialize
-WCS_Cashback_User::get_instance();

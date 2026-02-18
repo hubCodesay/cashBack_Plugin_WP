@@ -60,8 +60,9 @@ add_action('before_woocommerce_init', function() {
  * Plugin activation
  */
 function wcs_activate_plugin() {
-    // Load database class
+    // Load required classes
     require_once WCS_PLUGIN_DIR . 'includes/class-cashback-database.php';
+    require_once WCS_PLUGIN_DIR . 'includes/class-cashback-user.php';
     
     // Create database tables
     WCS_Cashback_Database::create_tables();
