@@ -46,15 +46,18 @@ class WCS_Cashback_Calculator {
      * Calculate cashback amount for a given subtotal or current cart
      * Now supports per-item brand logic if enabled in settings
      *
-     * @param float $subtotal Order subtotal (fallback)
+     * @param float $subtotal Order subtotal (fallback or base)
      * @param WC_Order|null $order Optional order object for order-specific calculation
+     * @param float $cashback_used Optional amount of cashback used in this order
      * @return float Cashback amount
      */
-    public static function calculate($subtotal, $order = null) {
+    public static function calculate($subtotal, $order = null, $cashback_used = 0) {
         $settings = get_option('wcs_cashback_settings');
         $use_brands = isset($settings['use_brands_logic']) && $settings['use_brands_logic'] === 'yes';
+        $subtotal = floatval($subtotal);
+        $cashback_used = floatval($cashback_used);
 
-        // If brands logic is OFF, use the old tier-based global percentage
+        // If brands logic is OFF, the $subtotal passed here (from checkout) is already (subtotal - used)
         if (!$use_brands) {
             $percentage = self::get_percentage($subtotal);
             if ($percentage <= 0) {
@@ -67,6 +70,16 @@ class WCS_Cashback_Calculator {
         $total_cashback = 0;
         $items = array();
 
+        // Calculate a pay ratio if cashback was used, to reduce basis for each product
+        // E.g. Subtotal 2000, Used 40. Ratio = (2000-40)/2000 = 0.98
+        // Each item price will be multiplied by 0.98 for cashback purposes.
+        $total_subtotal = ($order instanceof WC_Order) ? floatval($order->get_subtotal()) : $subtotal;
+        if ($cashback_used > 0 && $total_subtotal > 0) {
+            $pay_ratio = ($total_subtotal - $cashback_used) / $total_subtotal;
+        } else {
+            $pay_ratio = 1;
+        }
+
         // If we have an order object, use its items
         if ($order instanceof WC_Order) {
             foreach ($order->get_items() as $item) {
@@ -75,7 +88,7 @@ class WCS_Cashback_Calculator {
                     $items[] = array(
                         'id'         => $product->get_id(),
                         'product'    => $product,
-                        'line_total' => $item->get_total(),
+                        'line_total' => floatval($item->get_total()) * $pay_ratio,
                     );
                 }
             }
@@ -87,7 +100,7 @@ class WCS_Cashback_Calculator {
                     $items[] = array(
                         'id'         => $cart_item['product_id'],
                         'product'    => $cart_item['data'],
-                        'line_total' => $cart_item['line_total'],
+                        'line_total' => floatval($cart_item['line_total']) * $pay_ratio,
                     );
                 }
             }

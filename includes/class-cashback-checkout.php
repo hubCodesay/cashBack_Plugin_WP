@@ -688,13 +688,9 @@ class WCS_Cashback_Checkout {
 			}
 
 			if ($has_cashback_fee && $cashback_used > 0) {
-				$skip_earning = 'yes';
 				$order->update_meta_data('_wcs_cashback_used', $cashback_used);
-				$order->update_meta_data('_wcs_cashback_skip_earning', 'yes');
 			} else {
-				$skip_earning = 'no';
 				$order->update_meta_data('_wcs_cashback_used', 0);
-				$order->update_meta_data('_wcs_cashback_skip_earning', 'no');
 			}
 		}
 
@@ -716,12 +712,14 @@ class WCS_Cashback_Checkout {
 			));
 		}
 
-		// ── 2. Earn cashback (ONLY if NOT used) ──
-		if ($skip_earning !== 'yes' && class_exists('WCS_Cashback_Calculator')) {
-			// Use subtotal (before discounts) as basis for cashback calculation
+		// ── 2. Earn cashback ──
+		if (class_exists('WCS_Cashback_Calculator')) {
+			// Base calculation on Subtotal minus Used Cashback
 			$subtotal = floatval($order->get_subtotal());
-			$earned     = WCS_Cashback_Calculator::calculate($subtotal, $order);
-			$percentage = ($subtotal > 0) ? round(($earned / $subtotal) * 100, 1) : 0;
+			$calculation_base = max(0, $subtotal - $cashback_used);
+			
+			$earned     = WCS_Cashback_Calculator::calculate($calculation_base, $order, $cashback_used);
+			$percentage = ($calculation_base > 0) ? round(($earned / $calculation_base) * 100, 1) : 0;
 
 			if ($earned > 0) {
 				// Check max limit
