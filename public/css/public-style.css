@@ -298,6 +298,37 @@
     color: var(--wcs-text-light, #666666);
 }
 
+/* ── Potential earning block (div-based for WC Blocks) ── */
+.wcs-potential-earning-block {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    margin: 8px 0;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: var(--wcs-radius, 6px);
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.wcs-potential-earning-block .wcs-earning-label {
+    font-weight: 500;
+    color: var(--wcs-text, #333);
+}
+
+.wcs-potential-earning-block .wcs-earn-amount {
+    color: var(--wcs-success, #10b981);
+    font-weight: 700;
+}
+
+.wcs-potential-earning-block .wcs-no-earning {
+    color: var(--wcs-text-light, #666);
+}
+
+.wcs-potential-earning-block small {
+    color: var(--wcs-text-light, #999);
+}
 
 /* ═══════════════════════════════════════════════════════════════
  *  DASHBOARD WIDGET (My Account)

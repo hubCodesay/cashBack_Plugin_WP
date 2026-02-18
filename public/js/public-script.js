@@ -1,37 +1,211 @@
 /**
  * WooCommerce Cashback System — Public JS
- * Handles apply / remove cashback via AJAX
+ * Universal: works with both Classic (shortcode) and Block-based cart/checkout
  */
 (function ($) {
 	'use strict';
 
-	if (typeof wcs_public === 'undefined') {
-		return;
-	}
+	if (typeof wcs_public === 'undefined') return;
 
 	var ajaxUrl = wcs_public.ajax_url;
 	var nonce   = wcs_public.nonce;
+	var isBlocksMode = false;
+	var debounceTimer = null;
+	var ajaxInProgress = false;
 
-	/* ── De-duplicate cashback blocks ─────────────────── */
+	/* ═══════════════════════════════════════════════════════
+	 *  INITIALIZATION
+	 * ═══════════════════════════════════════════════════════ */
+	$(document).ready(function () {
+		isBlocksMode = detectBlocksMode();
+
+		if (isBlocksMode) {
+			// Wait for blocks to fully render, then inject
+			setTimeout(initBlocksMode, 800);
+		} else {
+			removeDuplicateBlocks();
+		}
+	});
+
+	// Classic mode: handle WC AJAX updates
+	$(document.body).on('updated_checkout updated_cart_totals', function () {
+		if (!isBlocksMode) {
+			removeDuplicateBlocks();
+		}
+	});
+
+	/* ═══════════════════════════════════════════════════════
+	 *  DETECT BLOCKS vs CLASSIC MODE
+	 * ═══════════════════════════════════════════════════════ */
+	function detectBlocksMode() {
+		return (
+			$('.wp-block-woocommerce-cart').length > 0 ||
+			$('.wp-block-woocommerce-checkout').length > 0 ||
+			$('.wc-block-cart').length > 0 ||
+			$('.wc-block-checkout').length > 0
+		);
+	}
+
+	/* ═══════════════════════════════════════════════════════
+	 *  BLOCKS MODE
+	 * ═══════════════════════════════════════════════════════ */
+	function initBlocksMode() {
+		positionCashbackBlock();
+		injectEarningInfo();
+		startObserving();
+	}
+
+	/**
+	 * Move the hidden fallback cashback block into the correct position
+	 */
+	function positionCashbackBlock() {
+		if ($('.wcs-cashback-block:visible').length > 0) return; // already visible
+
+		var $fallback = $('#wcs-blocks-fallback');
+		if (!$fallback.length) return;
+
+		var $block = $fallback.find('.wcs-cashback-block').first();
+		if (!$block.length) return;
+
+		var $anchor = findBlocksAnchor();
+		if (!$anchor.length) return;
+
+		$block.detach();
+		$anchor.after($block);
+		$fallback.remove();
+	}
+
+	/**
+	 * Find the best DOM anchor point in WC Blocks layout
+	 */
+	function findBlocksAnchor() {
+		var selectors = [
+			// Cart: after the totals footer item (Total row)
+			'.wc-block-components-totals-footer-item:last',
+			// Cart: inside the sidebar
+			'.wc-block-cart__totals .wp-block-woocommerce-cart-totals-block',
+			'.wc-block-cart__sidebar',
+			// Checkout: order summary
+			'.wp-block-woocommerce-checkout-order-summary-block',
+			'.wc-block-checkout__sidebar'
+		];
+
+		for (var i = 0; i < selectors.length; i++) {
+			var $el = $(selectors[i]).first();
+			if ($el.length) return $el;
+		}
+		return $();
+	}
+
+	/**
+	 * Inject the potential earning info from JSON data
+	 */
+	function injectEarningInfo() {
+		// Already in DOM?
+		if ($('.wcs-potential-earning-block').length > 0) return;
+
+		var $data = $('#wcs-earning-data');
+		if (!$data.length) return;
+
+		try {
+			var data = JSON.parse($data.text());
+		} catch (e) { return; }
+
+		if (!data.earning_html) return;
+
+		// Insert after cashback block, or after the blocks anchor
+		var $after = $('.wcs-cashback-block:visible').last();
+		if (!$after.length) $after = findBlocksAnchor();
+		if ($after.length) {
+			$after.after(data.earning_html);
+		}
+	}
+
+	/* ═══════════════════════════════════════════════════════
+	 *  MUTATION OBSERVER — re-inject after blocks re-render
+	 * ═══════════════════════════════════════════════════════ */
+	function startObserving() {
+		var container =
+			document.querySelector('.wp-block-woocommerce-cart') ||
+			document.querySelector('.wp-block-woocommerce-checkout') ||
+			document.querySelector('.wc-block-cart') ||
+			document.querySelector('.wc-block-checkout');
+
+		if (!container) return;
+
+		var observer = new MutationObserver(function () {
+			if (debounceTimer) clearTimeout(debounceTimer);
+			debounceTimer = setTimeout(function () {
+				var needsBlock   = ($('.wcs-cashback-block:visible').length === 0);
+				var needsEarning = ($('.wcs-potential-earning-block').length === 0);
+
+				if (needsBlock || needsEarning) {
+					refreshViaAjax();
+				}
+			}, 600);
+		});
+
+		observer.observe(container, { childList: true, subtree: true });
+	}
+
+	/**
+	 * Fetch fresh cashback data via AJAX and re-inject blocks
+	 */
+	function refreshViaAjax() {
+		if (ajaxInProgress) return;
+		ajaxInProgress = true;
+
+		var context = ($('.wp-block-woocommerce-cart, .wc-block-cart').length > 0) ? 'cart' : 'checkout';
+
+		$.post(ajaxUrl, {
+			action: 'wcs_get_cashback_data',
+			nonce:  nonce,
+			context: context
+		}, function (res) {
+			ajaxInProgress = false;
+			if (!res.success) return;
+
+			var d = res.data;
+
+			// Re-inject cashback block
+			if ($('.wcs-cashback-block:visible').length === 0 && d.block_html) {
+				var $anchor = findBlocksAnchor();
+				if ($anchor.length) {
+					$anchor.after(d.block_html);
+				}
+			}
+
+			// Re-inject earning block
+			if ($('.wcs-potential-earning-block').length === 0 && d.earning_html) {
+				var $after = $('.wcs-cashback-block:visible').last();
+				if (!$after.length) $after = findBlocksAnchor();
+				if ($after.length) {
+					$after.after(d.earning_html);
+				}
+			}
+		}).fail(function () {
+			ajaxInProgress = false;
+		});
+	}
+
+	/* ═══════════════════════════════════════════════════════
+	 *  CLASSIC MODE — de-duplicate blocks
+	 * ═══════════════════════════════════════════════════════ */
 	function removeDuplicateBlocks() {
 		var seen = {};
 		$('.wcs-cashback-block').each(function () {
 			var id = this.id || 'unnamed';
 			if (seen[id]) {
-				$(this).remove(); // remove duplicate
+				$(this).remove();
 			} else {
 				seen[id] = true;
 			}
 		});
 	}
 
-	// Run on load
-	$(document).ready(removeDuplicateBlocks);
-
-	// Run after WC AJAX updates
-	$(document.body).on('updated_checkout updated_cart_totals', removeDuplicateBlocks);
-
-	/* ── Apply cashback ────────────────────────────────── */
+	/* ═══════════════════════════════════════════════════════
+	 *  APPLY CASHBACK (works in both modes)
+	 * ═══════════════════════════════════════════════════════ */
 	$(document).on('click', '.wcs-cb-apply-btn', function (e) {
 		e.preventDefault();
 		var $btn     = $(this);
@@ -54,7 +228,6 @@
 		}, function (res) {
 			if (res.success) {
 				showMessage($msg, res.data.message, 'success');
-				// Refresh cart / checkout fragments
 				refreshPage();
 			} else {
 				showMessage($msg, res.data.message || 'Помилка', 'error');
@@ -66,7 +239,9 @@
 		});
 	});
 
-	/* ── Remove cashback ───────────────────────────────── */
+	/* ═══════════════════════════════════════════════════════
+	 *  REMOVE CASHBACK (works in both modes)
+	 * ═══════════════════════════════════════════════════════ */
 	$(document).on('click', '.wcs-cb-remove-btn', function (e) {
 		e.preventDefault();
 		var $btn    = $(this);
@@ -92,7 +267,9 @@
 		});
 	});
 
-	/* ── Use-all shortcut: click on balance value to auto-fill max ── */
+	/* ═══════════════════════════════════════════════════════
+	 *  USE-ALL SHORTCUT — click balance to auto-fill max
+	 * ═══════════════════════════════════════════════════════ */
 	$(document).on('click', '.wcs-cb-has-balance', function () {
 		var $block = $(this).closest('.wcs-cashback-block');
 		var $input = $block.find('.wcs-cb-input');
@@ -101,7 +278,9 @@
 		}
 	});
 
-	/* ── Helpers ───────────────────────────────────────── */
+	/* ═══════════════════════════════════════════════════════
+	 *  HELPERS
+	 * ═══════════════════════════════════════════════════════ */
 	function showMessage($el, text, type) {
 		$el.text(text)
 		   .removeClass('wcs-msg-success wcs-msg-error')
@@ -112,14 +291,18 @@
 	}
 
 	function refreshPage() {
-		// Use WC built-in update for checkout
+		if (isBlocksMode) {
+			// Blocks mode: reload to get fresh server-rendered data
+			window.location.reload();
+			return;
+		}
+
+		// Classic: use WC built-in triggers
 		if ($('form.checkout').length) {
 			$(document.body).trigger('update_checkout');
 		}
-		// For cart page — update cart
 		if ($('.woocommerce-cart-form').length) {
 			$(document.body).trigger('wc_update_cart');
-			// Fallback: reload page after short delay
 			setTimeout(function () {
 				window.location.reload();
 			}, 500);

@@ -80,6 +80,13 @@ class WCS_Cashback_Checkout {
 
 		// ── Clear session after order ───────────────────────
 		add_action('woocommerce_thankyou', array($this, 'clear_session_after_order'));
+
+		// ── Blocks fallback (wp_footer) ─────────────────────
+		add_action('wp_footer', array($this, 'render_blocks_fallback'));
+
+		// ── AJAX for blocks mode data refresh ───────────────
+		add_action('wp_ajax_wcs_get_cashback_data', array($this, 'ajax_get_cashback_data'));
+		add_action('wp_ajax_nopriv_wcs_get_cashback_data', array($this, 'ajax_get_cashback_data'));
 	}
 
 	/* ═══════════════════════════════════════════════════════
@@ -278,6 +285,128 @@ class WCS_Cashback_Checkout {
 			echo wc_price(0);
 		}
 		echo '</div>';
+	}
+
+	/* ═══════════════════════════════════════════════════════
+	 *  BLOCKS FALLBACK — wp_footer rendering for block-based cart/checkout
+	 * ═══════════════════════════════════════════════════════ */
+	public function render_blocks_fallback() {
+		if (!function_exists('is_cart') || !function_exists('is_checkout')) return;
+		if (!is_cart() && !is_checkout()) return;
+		if (!function_exists('wc_price')) return;
+
+		$context = is_cart() ? 'cart' : 'checkout';
+		$flag_key = 'wcs_rendered_' . $context;
+		$classic_rendered = !empty($GLOBALS[$flag_key]);
+
+		// Render hidden cashback block if classic hooks didn't fire
+		if (!$classic_rendered) {
+			echo '<div id="wcs-blocks-fallback" style="display:none;" data-context="' . esc_attr($context) . '">';
+			$this->render_cashback_block($context);
+			echo '</div>';
+		}
+
+		// Output earning data as JSON for JS (both modes)
+		$this->render_earning_data_json($context);
+	}
+
+	/**
+	 * Output earning data as JSON script tag for JS consumption
+	 */
+	private function render_earning_data_json($context = 'cart') {
+		if (!class_exists('WCS_Cashback_Calculator') || !WC()->cart) return;
+
+		$applied   = $this->get_applied_amount();
+		$subtotal  = floatval(WC()->cart->get_subtotal());
+		$percentage = ($applied > 0) ? 0 : WCS_Cashback_Calculator::get_percentage($subtotal);
+		$potential  = ($applied > 0) ? 0 : WCS_Cashback_Calculator::calculate($subtotal);
+
+		$earning_html = '';
+		if ($applied > 0) {
+			$earning_html = '<div class="wcs-potential-earning-block">'
+				. '<span class="wcs-earning-label">' . __('Кешбек з цього замовлення', 'woo-cashback-system') . '</span>'
+				. '<span class="wcs-no-earning">— <small>' . __('(не нараховується при використанні кешбеку)', 'woo-cashback-system') . '</small></span>'
+				. '</div>';
+		} elseif ($potential > 0) {
+			$earning_html = '<div class="wcs-potential-earning-block">'
+				. '<span class="wcs-earning-label">' . __('Кешбек з цього замовлення', 'woo-cashback-system') . '</span>'
+				. '<span class="wcs-earn-amount">+' . wc_price($potential) . '</span> <small>(' . $percentage . '%)</small>'
+				. '</div>';
+		}
+
+		$data = array(
+			'applied'      => $applied,
+			'potential'    => $potential,
+			'percentage'   => $percentage,
+			'subtotal'     => $subtotal,
+			'no_earn'      => ($applied > 0),
+			'earning_html' => $earning_html,
+		);
+
+		echo '<script type="application/json" id="wcs-earning-data">' . wp_json_encode($data) . '</script>';
+	}
+
+	/* ═══════════════════════════════════════════════════════
+	 *  AJAX — Get cashback data (for blocks mode refresh)
+	 * ═══════════════════════════════════════════════════════ */
+	public function ajax_get_cashback_data() {
+		if (!function_exists('wc_price')) {
+			wp_send_json_error(array('message' => 'WooCommerce not loaded'));
+		}
+
+		$is_logged = is_user_logged_in();
+		$user_id   = $is_logged ? get_current_user_id() : 0;
+		$balance   = 0;
+
+		if ($is_logged && class_exists('WCS_Cashback_Database')) {
+			$data    = WCS_Cashback_Database::get_user_balance($user_id);
+			$balance = $data ? floatval($data->balance) : 0;
+		}
+
+		$cart_subtotal = (WC()->cart) ? floatval(WC()->cart->get_subtotal()) : 0;
+		$usage_pct     = class_exists('WCS_Cashback_Calculator') ? WCS_Cashback_Calculator::get_usage_limit_percentage() : 100;
+		$max_allowed   = min($balance, round($cart_subtotal * ($usage_pct / 100), 2));
+		$applied       = $this->get_applied_amount();
+
+		$percentage = 0;
+		$potential  = 0;
+		if (class_exists('WCS_Cashback_Calculator') && $applied <= 0) {
+			$percentage = WCS_Cashback_Calculator::get_percentage($cart_subtotal);
+			$potential  = WCS_Cashback_Calculator::calculate($cart_subtotal);
+		}
+
+		// Generate block HTML
+		$context = isset($_POST['context']) ? sanitize_text_field($_POST['context']) : 'cart';
+		ob_start();
+		unset($GLOBALS['wcs_rendered_' . $context]);
+		$this->render_cashback_block($context);
+		$block_html = ob_get_clean();
+
+		// Generate earning HTML
+		$earning_html = '';
+		if ($applied > 0) {
+			$earning_html = '<div class="wcs-potential-earning-block">'
+				. '<span class="wcs-earning-label">' . __('Кешбек з цього замовлення', 'woo-cashback-system') . '</span>'
+				. '<span class="wcs-no-earning">— <small>' . __('(не нараховується при використанні кешбеку)', 'woo-cashback-system') . '</small></span>'
+				. '</div>';
+		} elseif ($potential > 0) {
+			$earning_html = '<div class="wcs-potential-earning-block">'
+				. '<span class="wcs-earning-label">' . __('Кешбек з цього замовлення', 'woo-cashback-system') . '</span>'
+				. '<span class="wcs-earn-amount">+' . wc_price($potential) . '</span> <small>(' . $percentage . '%)</small>'
+				. '</div>';
+		}
+
+		wp_send_json_success(array(
+			'is_logged_in'  => $is_logged,
+			'balance'       => $balance,
+			'potential'     => $potential,
+			'percentage'    => $percentage,
+			'applied'       => $applied,
+			'max_allowed'   => $max_allowed,
+			'no_earn'       => ($applied > 0),
+			'block_html'    => $block_html,
+			'earning_html'  => $earning_html,
+		));
 	}
 
 	/* ═══════════════════════════════════════════════════════
