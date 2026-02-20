@@ -139,6 +139,12 @@ class WCS_Cashback_Checkout {
 
 		$subtotal = floatval(WC()->cart->get_subtotal());
 		$applied  = $this->get_applied_amount();
+
+		// Hide if coupons are applied
+		if (!empty(WC()->cart->get_applied_coupons())) {
+			return;
+		}
+
 		$calculation_base = max(0, $subtotal - $applied);
 		$potential = WCS_Cashback_Calculator::calculate($calculation_base, null, $applied);
 		
@@ -150,6 +156,8 @@ class WCS_Cashback_Checkout {
 
 		if ($potential > 0) {
 			echo '<td><span class="wcs-earn-amount">+' . wc_price($potential) . '</span> <small style="color:#999;">(' . $effective_pct . '%)</small></td>';
+		} elseif ($applied > 0) {
+			echo '<td><span class="wcs-no-earning">' . __('Не нараховується', 'woo-cashback-system') . '</span></td>';
 		} else {
 			// Show next tier info so customer knows how much more to spend
 			$next_tier = $this->get_next_tier_info($calculation_base);
@@ -210,6 +218,11 @@ class WCS_Cashback_Checkout {
 		$GLOBALS[$flag_key] = true;
 
 		if (!function_exists('wc_price')) {
+			return;
+		}
+
+		// Hide block if coupons are applied
+		if (WC()->cart && !empty(WC()->cart->get_applied_coupons())) {
 			return;
 		}
 
@@ -330,8 +343,15 @@ class WCS_Cashback_Checkout {
 			return;
 		}
 
-		$subtotal   = floatval(WC()->cart->get_subtotal());
-		$potential   = WCS_Cashback_Calculator::calculate($subtotal);
+		// Hide if coupons are applied
+		if (!empty(WC()->cart->get_applied_coupons())) {
+			return;
+		}
+
+		$subtotal    = floatval(WC()->cart->get_subtotal());
+		$applied     = $this->get_applied_amount();
+		$calculation_base = max(0, $subtotal - $applied);
+		$potential   = WCS_Cashback_Calculator::calculate($calculation_base, null, $applied);
 		$percentage  = ($subtotal > 0) ? round(($potential / $subtotal) * 100, 1) : 0;
 		$applied     = $this->get_applied_amount();
 		echo '<div class="wcs-potential-cashback">';
@@ -374,15 +394,25 @@ class WCS_Cashback_Checkout {
 		if (!class_exists('WCS_Cashback_Calculator') || !WC()->cart) return;
 
 		$subtotal  = floatval(WC()->cart->get_subtotal());
+		$applied   = $this->get_applied_amount();
 		$calculation_base = max(0, $subtotal - $applied);
 		$potential  = WCS_Cashback_Calculator::calculate($calculation_base, null, $applied);
 		$percentage = ($calculation_base > 0 && $potential > 0) ? round(($potential / $calculation_base) * 100, 1) : 0;
 
+		$has_coupons = !empty(WC()->cart->get_applied_coupons());
+
 		$earning_html = '';
-		if ($potential > 0) {
+		if ($has_coupons) {
+			$earning_html = ''; // Hidden if coupons applied
+		} elseif ($potential > 0) {
 			$earning_html = '<div class="wcs-potential-earning-block">'
 				. '<span class="wcs-earning-label">' . __('Кешбек з цього замовлення', 'woo-cashback-system') . '</span>'
 				. '<span class="wcs-earn-amount">+' . wc_price($potential) . '</span> <small>(' . $percentage . '%)</small>'
+				. '</div>';
+		} elseif ($applied > 0) {
+			$earning_html = '<div class="wcs-potential-earning-block">'
+				. '<span class="wcs-earning-label">' . __('Кешбек з цього замовлення', 'woo-cashback-system') . '</span>'
+				. '<span class="wcs-no-earning">' . __('Не нараховується', 'woo-cashback-system') . '</span>'
 				. '</div>';
 		} else {
 			// Show next tier hint
@@ -407,7 +437,7 @@ class WCS_Cashback_Checkout {
 			'potential'    => $potential,
 			'percentage'   => $percentage,
 			'subtotal'     => $subtotal,
-			'no_earn'      => ($applied > 0),
+			'no_earn'      => ($applied > 0 || $has_coupons),
 			'earning_html' => $earning_html,
 		);
 
@@ -435,10 +465,11 @@ class WCS_Cashback_Checkout {
 		$usage_pct     = class_exists('WCS_Cashback_Calculator') ? WCS_Cashback_Calculator::get_usage_limit_percentage() : 100;
 		$max_allowed   = min($balance, round($cart_subtotal * ($usage_pct / 100), 2));
 		$applied       = $this->get_applied_amount();
+		$has_coupons   = (WC()->cart) ? !empty(WC()->cart->get_applied_coupons()) : false;
 
 		$potential  = 0;
 		$percentage = 0;
-		if (class_exists('WCS_Cashback_Calculator')) {
+		if (class_exists('WCS_Cashback_Calculator') && !$has_coupons) {
 			$calculation_base = max(0, $cart_subtotal - $applied);
 			$potential  = WCS_Cashback_Calculator::calculate($calculation_base, null, $applied);
 			$percentage = ($calculation_base > 0) ? round(($potential / $calculation_base) * 100, 1) : 0;
@@ -453,7 +484,9 @@ class WCS_Cashback_Checkout {
 
 		// Generate earning HTML
 		$earning_html = '';
-		if ($potential > 0) {
+		if ($has_coupons) {
+			$earning_html = ''; // Hidden if coupons applied
+		} elseif ($potential > 0) {
 			$earning_html = '<div class="wcs-potential-earning-block">'
 				. '<span class="wcs-earning-label">' . __('Кешбек з цього замовлення', 'woo-cashback-system') . '</span>'
 				. '<span class="wcs-earn-amount">+' . wc_price($potential) . '</span> <small>(' . $percentage . '%)</small>'
@@ -483,7 +516,7 @@ class WCS_Cashback_Checkout {
 			'percentage'    => $percentage,
 			'applied'       => $applied,
 			'max_allowed'   => $max_allowed,
-			'no_earn'       => ($applied > 0),
+			'no_earn'       => ($applied > 0 || $has_coupons),
 			'block_html'    => $block_html,
 			'earning_html'  => $earning_html,
 		));
@@ -502,6 +535,11 @@ class WCS_Cashback_Checkout {
 
 		$amount = $this->get_applied_amount();
 		if ($amount <= 0) {
+			return;
+		}
+
+		// Disable cashback discount if coupons are applied
+		if (!empty($cart->get_applied_coupons())) {
 			return;
 		}
 

@@ -187,21 +187,29 @@
 
 			var d = res.data;
 
-			// Re-inject cashback block
-			if ($('.wcs-cashback-block:visible').length === 0 && d.block_html) {
-				var $anchor = findBlocksAnchor();
-				if ($anchor.length) {
-					$anchor.after(d.block_html);
+			// Re-inject or remove cashback block
+			if (d.block_html) {
+				if ($('.wcs-cashback-block:visible').length === 0) {
+					var $anchor = findBlocksAnchor();
+					if ($anchor.length) {
+						$anchor.after(d.block_html);
+					}
 				}
+			} else {
+				$('.wcs-cashback-block').remove();
 			}
 
-			// Re-inject earning block
-			if ($('.wcs-potential-earning-block').length === 0 && d.earning_html) {
-				var $after = $('.wcs-cashback-block:visible').last();
-				if (!$after.length) $after = findBlocksAnchor();
-				if ($after.length) {
-					$after.after(d.earning_html);
+			// Re-inject or remove earning block
+			if (d.earning_html) {
+				if ($('.wcs-potential-earning-block').length === 0) {
+					var $after = $('.wcs-cashback-block:visible').last();
+					if (!$after.length) $after = findBlocksAnchor();
+					if ($after.length) {
+						$after.after(d.earning_html);
+					}
 				}
+			} else {
+				$('.wcs-potential-earning-block').remove();
 			}
 		}).fail(function () {
 			ajaxInProgress = false;

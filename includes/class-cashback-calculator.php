@@ -52,6 +52,30 @@ class WCS_Cashback_Calculator {
      * @return float Cashback amount
      */
     public static function calculate($subtotal, $order = null, $cashback_used = 0) {
+        $cashback_used = floatval($cashback_used);
+        
+        // If order object is provided, also check its meta
+        if ($order instanceof WC_Order && $cashback_used <= 0) {
+            $cashback_used = floatval($order->get_meta('_wcs_cashback_used', true));
+        }
+
+        if ($cashback_used > 0) {
+            return 0;
+        }
+
+        // Check for applied coupons
+        if ($order instanceof WC_Order) {
+            $coupons = $order->get_coupon_codes();
+            if (!empty($coupons)) {
+                return 0;
+            }
+        } elseif (function_exists('WC') && WC()->cart) {
+            $applied_coupons = WC()->cart->get_applied_coupons();
+            if (!empty($applied_coupons)) {
+                return 0;
+            }
+        }
+
         $settings = get_option('wcs_cashback_settings');
         $use_brands = isset($settings['use_brands_logic']) && $settings['use_brands_logic'] === 'yes';
         $subtotal = floatval($subtotal);
