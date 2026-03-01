@@ -44,8 +44,12 @@ class WCS_Cashback_Calculator {
      * @param WC_Product $product Product object
      * @return bool
      */
-    private static function is_discounted_product($product) {
+    private static function is_discounted_product($product, $line_subtotal = null, $line_total = null) {
         if (!$product || !is_object($product)) {
+            // Even if product object is missing, line subtotal/total can indicate discount.
+            if ($line_subtotal !== null && $line_total !== null && floatval($line_subtotal) > floatval($line_total)) {
+                return true;
+            }
             return false;
         }
 
@@ -55,8 +59,9 @@ class WCS_Cashback_Calculator {
 
         $regular_price = method_exists($product, 'get_regular_price') ? floatval($product->get_regular_price()) : 0;
         $sale_price = method_exists($product, 'get_sale_price') ? floatval($product->get_sale_price()) : 0;
+        $line_discounted = ($line_subtotal !== null && $line_total !== null && floatval($line_subtotal) > floatval($line_total));
 
-        return $regular_price > 0 && $sale_price > 0 && $sale_price < $regular_price;
+        return $line_discounted || ($regular_price > 0 && $sale_price > 0 && $sale_price < $regular_price);
     }
 
     /**
@@ -155,7 +160,7 @@ class WCS_Cashback_Calculator {
                         'id'         => $product->get_id(),
                         'product'    => $product,
                         'line_total' => floatval($item->get_total()) * $pay_ratio,
-                        'is_sale'    => self::is_discounted_product($product),
+                        'is_sale'    => self::is_discounted_product($product, $item->get_subtotal(), $item->get_total()),
                     );
                 }
             }
@@ -169,7 +174,11 @@ class WCS_Cashback_Calculator {
                         'id'         => $cart_item['product_id'],
                         'product'    => $product,
                         'line_total' => floatval($cart_item['line_total']) * $pay_ratio,
-                        'is_sale'    => self::is_discounted_product($product),
+                        'is_sale'    => self::is_discounted_product(
+                            $product,
+                            isset($cart_item['line_subtotal']) ? $cart_item['line_subtotal'] : null,
+                            isset($cart_item['line_total']) ? $cart_item['line_total'] : null
+                        ),
                     );
                 }
             }
